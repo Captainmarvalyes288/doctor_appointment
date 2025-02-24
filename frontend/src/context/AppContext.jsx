@@ -55,13 +55,13 @@ const AppContextProvider = (props) => {
 
     useEffect(() => {
         getDoctosData()
-    })
+    }, [loadUserProfileData]);
 
     useEffect(() => {
         if (token) {
             loadUserProfileData()
         }
-    })
+    }, [token])
 
     const value = {
         doctors, getDoctosData,

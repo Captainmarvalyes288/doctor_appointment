@@ -121,7 +121,7 @@ const MyAppointments = () => {
         if (token) {
             getUserAppointments()
         }
-    })
+    },[])
 
     return (
         <div>

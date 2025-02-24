@@ -128,7 +128,7 @@ const Appointment = () => {
         if (docInfo) {
             getAvailableSolts()
         }
-    })
+    }, [docInfo])
 
     return docInfo ? (
         <div>

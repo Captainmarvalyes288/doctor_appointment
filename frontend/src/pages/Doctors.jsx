@@ -13,16 +13,17 @@ const Doctors = () => {
   const { doctors } = useContext(AppContext)
 
   const applyFilter = () => {
-    if (speciality) {
-      setFilterDoc(doctors.filter(doc => doc.speciality === speciality))
+    if (speciality && doctors.length > 0) {
+      setFilterDoc(doctors.filter(doc => doc.speciality.toLowerCase() === speciality.toLowerCase()));
     } else {
-      setFilterDoc(doctors)
+      setFilterDoc(doctors);
     }
-  }
-
+  };
+  
   useEffect(() => {
-    applyFilter()
-  })
+    applyFilter();
+  }, [doctors]);  // Now the effect will run whenever doctors changes.
+  
 
   return (
     <div>
