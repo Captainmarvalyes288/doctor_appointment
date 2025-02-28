@@ -124,7 +124,23 @@ const updateProfile = async (req, res) => {
 const bookAppointment = async (req, res) => {
     try {
         const { userId, docId, slotDate, slotTime } = req.body;
+        
+        // Validate required fields
+        if (!userId || !docId || !slotDate || !slotTime) {
+            console.log("Missing required field:", { userId, docId, slotDate, slotTime });
+            return res.json({ success: false, message: 'All fields are required: userId, docId, slotDate, slotTime' });
+        }
+        
+        // Check if slotTime is empty
+        if (slotTime === '') {
+            return res.json({ success: false, message: 'Appointment time slot cannot be empty' });
+        }
+        
         const docData = await doctorModel.findById(docId).select("-password");
+
+        if (!docData) {
+            return res.json({ success: false, message: 'Doctor not found' });
+        }
 
         if (!docData.available) {
             return res.json({ success: false, message: 'Doctor Not Available' });
@@ -147,18 +163,32 @@ const bookAppointment = async (req, res) => {
 
         const userData = await userModel.findById(userId).select("-password");
 
-        delete docData.slots_booked;
+        if (!userData) {
+            return res.json({ success: false, message: 'User not found' });
+        }
+
+        // Create a clean copy of docData without the slots_booked field
+        const docDataClean = { ...docData.toObject() };
+        delete docDataClean.slots_booked;
 
         const appointmentData = {
             userId,
             docId,
             userData,
-            docData,
+            docData: docDataClean,
             amount: docData.fees,
             slotTime,
             slotDate,
             date: Date.now()
         };
+
+        console.log("Creating appointment with data:", {
+            userId, 
+            docId, 
+            slotDate, 
+            slotTime, 
+            amount: docData.fees
+        });
 
         const newAppointment = new appointmentModel(appointmentData);
         await newAppointment.save();
@@ -166,7 +196,7 @@ const bookAppointment = async (req, res) => {
         // save new slots data in docData
         await doctorModel.findByIdAndUpdate(docId, { slots_booked });
 
-        res.json({ success: true, message: 'Appointment Booked' });
+        res.json({ success: true, message: 'Appointment Booked', appointmentId: newAppointment._id });
     } catch (error) {
         console.log(error);
         res.json({ success: false, message: error.message });

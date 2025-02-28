@@ -122,13 +122,13 @@ const Appointment = () => {
         if (doctors.length > 0) {
             fetchDocInfo()
         }
-    })
+    }, [doctors, docId]) 
 
     useEffect(() => {
         if (docInfo) {
             getAvailableSolts()
         }
-    }, [docInfo])
+    }, [docInfo]) 
 
     return docInfo ? (
         <div>

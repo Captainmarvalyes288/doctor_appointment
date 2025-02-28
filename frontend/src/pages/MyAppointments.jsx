@@ -24,21 +24,17 @@ const MyAppointments = () => {
     // Getting User Appointments Data Using API
     const getUserAppointments = async () => {
         try {
-
             const { data } = await axios.get(backendUrl + '/api/user/appointments', { headers: { token } })
             setAppointments(data.appointments.reverse())
-
         } catch (error) {
             console.log(error)
-            toast.error(error.message)
+            toast.error(error.message || "Failed to fetch appointments")
         }
     }
 
     // Function to cancel appointment Using API
     const cancelAppointment = async (appointmentId) => {
-
         try {
-
             const { data } = await axios.post(backendUrl + '/api/user/cancel-appointment', { appointmentId }, { headers: { token } })
 
             if (data.success) {
@@ -47,12 +43,10 @@ const MyAppointments = () => {
             } else {
                 toast.error(data.message)
             }
-
         } catch (error) {
             console.log(error)
-            toast.error(error.message)
+            toast.error(error.message || "Failed to cancel appointment")
         }
-
     }
 
     const initPay = (order) => {
@@ -65,18 +59,30 @@ const MyAppointments = () => {
             order_id: order.id,
             receipt: order.receipt,
             handler: async (response) => {
-
-                console.log(response)
-
+                console.log(response);
                 try {
-                    const { data } = await axios.post(backendUrl + "/api/user/verifyRazorpay", response, { headers: { token } });
+                    // Make sure this URL matches exactly with your backend route
+                    const { data } = await axios.post(
+                        backendUrl + "/api/user/verify-razorpay",
+                        {
+                            razorpay_order_id: response.razorpay_order_id,
+                            razorpay_payment_id: response.razorpay_payment_id,
+                            razorpay_signature: response.razorpay_signature,
+                            appointmentId: payment
+                        },
+                        { headers: { token } }
+                    );
+                   
                     if (data.success) {
-                        navigate('/my-appointments')
-                        getUserAppointments()
+                        toast.success("Payment successful");
+                        navigate('/my-appointments');
+                        getUserAppointments();
+                    } else {
+                        toast.error(data.message || "Payment verification failed");
                     }
                 } catch (error) {
-                    console.log(error)
-                    toast.error(error.message)
+                    console.log(error);
+                    toast.error(error.response?.data?.message || error.message || "Payment verification failed");
                 }
             }
         };
@@ -87,15 +93,19 @@ const MyAppointments = () => {
     // Function to make payment using razorpay
     const appointmentRazorpay = async (appointmentId) => {
         try {
-            const { data } = await axios.post(backendUrl + '/api/user/payment-razorpay', { appointmentId }, { headers: { token } })
+            const { data } = await axios.post(backendUrl + '/api/user/payment-razorpay', { 
+                appointmentId,
+                currency: 'INR'  
+            }, { headers: { token } })
+            
             if (data.success) {
                 initPay(data.order)
-            }else{
+            } else {
                 toast.error(data.message)
             }
         } catch (error) {
             console.log(error)
-            toast.error(error.message)
+            toast.error(error.response?.data?.message || error.message || "Failed to initiate payment")
         }
     }
 
@@ -106,22 +116,20 @@ const MyAppointments = () => {
             if (data.success) {
                 const { session_url } = data
                 window.location.replace(session_url)
-            }else{
+            } else {
                 toast.error(data.message)
             }
         } catch (error) {
             console.log(error)
-            toast.error(error.message)
+            toast.error(error.response?.data?.message || error.message || "Failed to initiate Stripe payment")
         }
     }
-
-
 
     useEffect(() => {
         if (token) {
             getUserAppointments()
         }
-    },[])
+    }, [token])
 
     return (
         <div>
