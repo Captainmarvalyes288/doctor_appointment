@@ -7,12 +7,14 @@ import { v2 as cloudinary } from "cloudinary";
 import userModel from "../models/userModel.js";
 
 // API for admin login
+// API for admin login
 const loginAdmin = async (req, res) => {
     try {
         const { email, password } = req.body;
         
         if (email === process.env.ADMIN_EMAIL && password === process.env.ADMIN_PASSWORD) {
-            const payload = { email, password };
+            // Don't include password in the token payload
+            const payload = { email, role: 'admin' };
             const token = jwt.sign(payload, process.env.JWT_SECRET, { algorithm: 'HS256' });
             res.json({ success: true, token });
         } else {

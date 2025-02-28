@@ -5,9 +5,7 @@ import appointmentModel from "../models/appointmentModel.js";
 
 // API for doctor Login 
 const loginDoctor = async (req, res) => {
-
     try {
-
         const { email, password } = req.body
         const user = await doctorModel.findOne({ email })
 
@@ -23,8 +21,6 @@ const loginDoctor = async (req, res) => {
         } else {
             res.json({ success: false, message: "Invalid credentials" })
         }
-
-
     } catch (error) {
         console.log(error)
         res.json({ success: false, message: error.message })
