@@ -1,5 +1,5 @@
 import  { useState, useEffect } from 'react';
-import axios from 'axios';
+import axios from '../../utils/axios';
 import { toast } from 'react-toastify';
 
 const Labs = () => {
@@ -7,6 +7,7 @@ const Labs = () => {
   const [loading, setLoading] = useState(true);
   const [formData, setFormData] = useState({
     name: '',
+    image: null,
     address: '',
     city: '',
     state: '',
@@ -16,7 +17,8 @@ const Labs = () => {
     services: '',
     operatingHours: '',
     accreditation: '',
-    description: ''
+    description: '',
+    price: ''
   });
 
   // Get the admin token from localStorage
@@ -32,23 +34,75 @@ const Labs = () => {
       setLabs(response.data);
       setLoading(false);
     } catch (error) {
-      toast.error('Failed to fetch labs');
+      console.error('Error fetching labs:', error);
+      toast.error(error.response?.data?.message || 'Failed to fetch labs');
       setLoading(false);
+    }
+  };
+
+  const handleImageChange = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      // Check file size (max 5MB)
+      if (file.size > 5 * 1024 * 1024) {
+        toast.error('Image size should be less than 5MB');
+        return;
+      }
+
+      // Check file type
+      if (!file.type.startsWith('image/')) {
+        toast.error('Please upload an image file');
+        return;
+      }
+
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setFormData({ ...formData, image: reader.result });
+      };
+      reader.readAsDataURL(file);
     }
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
+      // Validate required fields
+      const requiredFields = [
+        'name', 'address', 'city', 'state', 'zipCode', 
+        'phone', 'email', 'services', 'operatingHours', 
+        'accreditation', 'description', 'price', 'image'
+      ];
+      const missingFields = requiredFields.filter(field => !formData[field]);
+      if (missingFields.length > 0) {
+        toast.error('Please fill in all required fields');
+        return;
+      }
+
+      // Validate price
+      if (isNaN(formData.price) || formData.price <= 0) {
+        toast.error('Please enter a valid price');
+        return;
+      }
+
+      // Validate email format
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(formData.email)) {
+        toast.error('Please enter a valid email address');
+        return;
+      }
+
       await axios.post('/api/labs', formData, {
         headers: {
-          'Authorization': `Bearer ${adminToken}`
+          'Authorization': `Bearer ${adminToken}`,
+          'Content-Type': 'application/json'
         }
       });
+      
       toast.success('Lab added successfully');
       fetchLabs();
       setFormData({
         name: '',
+        image: null,
         address: '',
         city: '',
         state: '',
@@ -58,11 +112,12 @@ const Labs = () => {
         services: '',
         operatingHours: '',
         accreditation: '',
-        description: ''
+        description: '',
+        price: ''
       });
     } catch (error) {
-      toast.error(error.response?.data?.message || 'Failed to add lab');
       console.error('Error adding lab:', error);
+      toast.error(error.response?.data?.message || 'Failed to add lab');
     }
   };
 
@@ -76,8 +131,8 @@ const Labs = () => {
       toast.success('Lab deleted successfully');
       fetchLabs();
     } catch (error) {
-      toast.error(error.response?.data?.message || 'Failed to delete lab');
       console.error('Error deleting lab:', error);
+      toast.error(error.response?.data?.message || 'Failed to delete lab');
     }
   };
 
@@ -96,6 +151,13 @@ const Labs = () => {
             placeholder="Lab Name"
             value={formData.name}
             onChange={(e) => setFormData({...formData, name: e.target.value})}
+            className="border p-2 rounded"
+            required
+          />
+          <input
+            type="file"
+            accept="image/*"
+            onChange={handleImageChange}
             className="border p-2 rounded"
             required
           />
@@ -163,6 +225,14 @@ const Labs = () => {
             className="border p-2 rounded"
             required
           />
+          <input
+            type="number"
+            placeholder="Price"
+            value={formData.price}
+            onChange={(e) => setFormData({...formData, price: e.target.value})}
+            className="border p-2 rounded"
+            required
+          />
         </div>
         <textarea
           placeholder="Services Offered"
@@ -195,20 +265,28 @@ const Labs = () => {
           <table className="w-full">
             <thead>
               <tr className="bg-gray-50">
+                <th className="px-6 py-3 text-left">Image</th>
                 <th className="px-6 py-3 text-left">Name</th>
                 <th className="px-6 py-3 text-left">Location</th>
                 <th className="px-6 py-3 text-left">Contact</th>
-                <th className="px-6 py-3 text-left">Accreditation</th>
+                <th className="px-6 py-3 text-left">Price</th>
                 <th className="px-6 py-3 text-left">Actions</th>
               </tr>
             </thead>
             <tbody>
               {labs.map((lab) => (
                 <tr key={lab._id} className="border-t">
+                  <td className="px-6 py-4">
+                    <img 
+                      src={lab.image} 
+                      alt={lab.name} 
+                      className="w-16 h-16 object-cover rounded"
+                    />
+                  </td>
                   <td className="px-6 py-4">{lab.name}</td>
                   <td className="px-6 py-4">{`${lab.city}, ${lab.state}`}</td>
                   <td className="px-6 py-4">{lab.phone}</td>
-                  <td className="px-6 py-4">{lab.accreditation}</td>
+                  <td className="px-6 py-4">${lab.price}</td>
                   <td className="px-6 py-4">
                     <button
                       onClick={() => handleDelete(lab._id)}

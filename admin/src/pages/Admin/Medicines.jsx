@@ -12,8 +12,10 @@ const Medicines = () => {
     manufacturer: '',
     category: '',
     price: '',
-    prescriptionRequired: false
+    prescriptionRequired: false,
+    image: null
   });
+  const [previewImage, setPreviewImage] = useState(null);
 
   // Get the admin token from localStorage
   const adminToken = localStorage.getItem('aToken');
@@ -28,19 +30,60 @@ const Medicines = () => {
       setMedicines(response.data);
       setLoading(false);
     } catch (error) {
-      toast.error('Failed to fetch medicines');
+      console.error('Error fetching medicines:', error);
+      toast.error(error.response?.data?.message || 'Failed to fetch medicines');
       setLoading(false);
+    }
+  };
+
+  const handleImageChange = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      // Check file size (max 5MB)
+      if (file.size > 5 * 1024 * 1024) {
+        toast.error('Image size should be less than 5MB');
+        return;
+      }
+
+      // Check file type
+      if (!file.type.startsWith('image/')) {
+        toast.error('Please upload an image file');
+        return;
+      }
+
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setPreviewImage(reader.result);
+        setFormData({ ...formData, image: reader.result });
+      };
+      reader.readAsDataURL(file);
     }
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
+      // Validate form data
+      if (!formData.name || !formData.description || !formData.dosage || 
+          !formData.manufacturer || !formData.category || !formData.price || 
+          !formData.image) {
+        toast.error('Please fill in all required fields');
+        return;
+      }
+
+      // Validate price
+      if (isNaN(formData.price) || formData.price <= 0) {
+        toast.error('Please enter a valid price');
+        return;
+      }
+
       await axios.post('/api/medicines', formData, {
         headers: {
-          'Authorization': `Bearer ${adminToken}`
+          'Authorization': `Bearer ${adminToken}`,
+          'Content-Type': 'application/json'
         }
       });
+      
       toast.success('Medicine added successfully');
       fetchMedicines();
       setFormData({
@@ -50,11 +93,13 @@ const Medicines = () => {
         manufacturer: '',
         category: '',
         price: '',
-        prescriptionRequired: false
+        prescriptionRequired: false,
+        image: null
       });
+      setPreviewImage(null);
     } catch (error) {
-      toast.error(error.response?.data?.message || 'Failed to add medicine');
       console.error('Error adding medicine:', error);
+      toast.error(error.response?.data?.message || 'Failed to add medicine');
     }
   };
 
@@ -68,8 +113,8 @@ const Medicines = () => {
       toast.success('Medicine deleted successfully');
       fetchMedicines();
     } catch (error) {
-      toast.error(error.response?.data?.message || 'Failed to delete medicine');
       console.error('Error deleting medicine:', error);
+      toast.error(error.response?.data?.message || 'Failed to delete medicine');
     }
   };
 
@@ -122,6 +167,8 @@ const Medicines = () => {
             onChange={(e) => setFormData({...formData, price: e.target.value})}
             className="border p-2 rounded"
             required
+            min="0"
+            step="0.01"
           />
           <div className="flex items-center">
             <input
@@ -141,6 +188,25 @@ const Medicines = () => {
           rows="3"
           required
         />
+        <div className="mt-4">
+          <label className="block text-sm font-medium text-gray-700 mb-2">
+            Medicine Image (Max 5MB)
+          </label>
+          <input
+            type="file"
+            accept="image/*"
+            onChange={handleImageChange}
+            className="border p-2 rounded w-full"
+            required
+          />
+          {previewImage && (
+            <img
+              src={previewImage}
+              alt="Preview"
+              className="mt-2 h-32 w-32 object-cover rounded"
+            />
+          )}
+        </div>
         <button
           type="submit"
           className="bg-blue-500 text-white px-4 py-2 rounded mt-4 hover:bg-blue-600"
@@ -156,6 +222,7 @@ const Medicines = () => {
           <table className="w-full">
             <thead>
               <tr className="bg-gray-50">
+                <th className="px-6 py-3 text-left">Image</th>
                 <th className="px-6 py-3 text-left">Name</th>
                 <th className="px-6 py-3 text-left">Manufacturer</th>
                 <th className="px-6 py-3 text-left">Category</th>
@@ -166,6 +233,13 @@ const Medicines = () => {
             <tbody>
               {medicines.map((medicine) => (
                 <tr key={medicine._id} className="border-t">
+                  <td className="px-6 py-4">
+                    <img
+                      src={medicine.image}
+                      alt={medicine.name}
+                      className="h-16 w-16 object-cover rounded"
+                    />
+                  </td>
                   <td className="px-6 py-4">{medicine.name}</td>
                   <td className="px-6 py-4">{medicine.manufacturer}</td>
                   <td className="px-6 py-4">{medicine.category}</td>
