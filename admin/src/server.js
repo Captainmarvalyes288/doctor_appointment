@@ -1,6 +1,7 @@
 import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
+import mongoose from 'mongoose';
 import paymentRoutes from './routes/paymentRoutes.js';
 import userRoutes from './routes/userRoutes.js';
 import doctorRoutes from './routes/doctorRoutes.js';
@@ -43,6 +44,22 @@ app.use((req, res) => {
     success: false,
     message: 'Route not found'
   });
+});
+
+
+dotenv.config();
+
+// Replace this:
+mongoose.connect('mongodb://localhost:27017/doctor')
+
+// With this:
+mongoose.connect(process.env.MONGODB_URI, {
+  useNewUrlParser: true,
+  useUnifiedTopology: true,
+}).then(() => {
+  console.log("MongoDB Atlas connected");
+}).catch(err => {
+  console.error("MongoDB connection failed:", err);
 });
 
 const PORT = process.env.PORT || 4000;

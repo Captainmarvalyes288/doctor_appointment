@@ -81,3 +81,11 @@ export const listDoctors = async (req, res) => {
     });
   }
 }; 
+export const getAllDoctors = async (req, res) => {
+  try {
+    const doctors = await DoctorModel.find({}); // no auth needed
+    res.status(200).json(doctors);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+}
