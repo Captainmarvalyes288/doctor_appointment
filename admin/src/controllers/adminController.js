@@ -39,3 +39,13 @@ export const login = async (req, res) => {
     });
   }
 }; 
+export const addDoctor = async (req, res) => {
+  try {
+    const { name, image, speciality, available } = req.body;
+    const newDoc = new DoctorModel({ name, image, speciality, available });
+    await newDoc.save();
+    res.status(201).json({ message: "Doctor added", doctor: newDoc });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+}

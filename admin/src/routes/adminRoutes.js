@@ -51,5 +51,6 @@ router.get('/dashboard', verifyAdminToken, (req, res) => {
     }
   });
 });
+router.post('/addDoctor', verifyAdminToken, addDoctor);
 
 export default router; 
